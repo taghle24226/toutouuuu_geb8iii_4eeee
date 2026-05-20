@@ -4,6 +4,8 @@ target/
 *.jar
 *.war
 
+uploads/
+
 # Node / Frontend
 frontend/node_modules/
 frontend/.vite/
