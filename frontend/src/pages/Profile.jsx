@@ -8,6 +8,7 @@ import toast from 'react-hot-toast'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
+
 export default function Profile() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
@@ -15,7 +16,7 @@ export default function Profile() {
   const [profile, setProfile] = useState(null)
   const [myItems, setMyItems] = useState([])
   const [loading, setLoading] = useState(true)
-  const [tab, setTab]         = useState('ACTIVE')  // ACTIVE | RESOLVED
+ // ACTIVE | RESOLVED
 
   useEffect(() => {
     const fetchData = async () => {
@@ -35,7 +36,7 @@ export default function Profile() {
     fetchData()
   }, [])
 
-  const filteredItems = myItems.filter(i => i.status === tab)
+  const filteredItems = myItems
 
   if (loading) {
     return (
@@ -109,39 +110,21 @@ export default function Profile() {
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold text-white">Mes annonces</h2>
-          <div className="flex gap-2">
-            {[
-              { value: 'ACTIVE',   label: 'Actives' },
-              { value: 'RESOLVED', label: 'Résolues' },
-            ].map(({ value, label }) => (
-              <button
-                key={value}
-                onClick={() => setTab(value)}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                  tab === value
-                    ? 'bg-primary-500/20 text-primary-300 border border-primary-500/40'
-                    : 'text-gray-500 hover:text-gray-300 hover:bg-gray-800'
-                }`}
-              >
-                {label}
-                <span className="ml-1.5 text-xs opacity-60">
-                  ({myItems.filter(i => i.status === value).length})
-                </span>
-              </button>
-            ))}
-          </div>
+         
         </div>
 
         {filteredItems.length === 0 ? (
           <div className="card flex flex-col items-center justify-center py-16 text-center">
-            <div className="text-4xl mb-3">📭</div>
-            <p className="text-gray-400 font-medium">
-              {tab === 'ACTIVE' ? 'Aucune annonce active' : 'Aucune annonce résolue'}
-            </p>
-            <p className="text-gray-600 text-sm mt-1">
-              {tab === 'ACTIVE' && 'Publiez votre première annonce !'}
-            </p>
-          </div>
+          <div className="text-4xl mb-3">📭</div>
+        
+          <p className="text-gray-400 font-medium">
+            Aucune annonce pour le moment
+          </p>
+        
+          <p className="text-gray-600 text-sm mt-1">
+            Publiez votre première annonce !
+          </p>
+        </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredItems.map(item => (

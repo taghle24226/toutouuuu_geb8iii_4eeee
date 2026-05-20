@@ -10,13 +10,23 @@ import Chat from './pages/Chat'
 import Profile from './pages/Profile'
 
 function ProtectedRoute({ children }) {
-  const { user } = useAuth()
-  return user ? children : <Navigate to="/login" replace />
+
+  const token = localStorage.getItem('token')
+
+  if (!token) {
+    return <Navigate to="/login" replace />
+  }
+
+  return children
 }
 
 function PublicRoute({ children }) {
-  const { user } = useAuth()
-  return !user ? children : <Navigate to="/" replace />
+
+  const token = localStorage.getItem('token')
+
+  return !token
+    ? children
+    : <Navigate to="/profile" replace />
 }
 
 function AppRoutes() {

@@ -3,12 +3,12 @@ import { useSearchParams, Link } from 'react-router-dom'
 import api from '../api/axios'
 import ItemCard from '../components/ItemCard'
 import { Search, Filter, Plus, Package, MapPin, Loader2, SlidersHorizontal } from 'lucide-react'
-
+import { useAuth } from '../context/AuthContext'
 const CATEGORIES = ['Tous', 'sac', 'téléphone', 'clés', 'portefeuille', 'bijoux', 'vêtements', 'autre']
 
 export default function Home() {
   const [searchParams, setSearchParams] = useSearchParams()
-
+  const { user } = useAuth()
   const [items, setItems]         = useState([])
   const [loading, setLoading]     = useState(true)
   const [typeFilter, setTypeFilter] = useState('ALL')      // ALL | LOST | FOUND
@@ -35,18 +35,24 @@ export default function Home() {
         ? data.filter(i => i.category?.toLowerCase() === category.toLowerCase())
         : data
 
-      setItems(filtered)
-      setStats({
-        total: data.length,
-        lost:  data.filter(i => i.type === 'LOST').length,
-        found: data.filter(i => i.type === 'FOUND').length,
-      })
+        const visibleItems = filtered.filter(i => {
+          if (!user) return true
+        
+          return String(i.userId) !== String(user.id)
+        })
+        
+        setItems(visibleItems)
+        setStats({
+          total: visibleItems.length,
+          lost: visibleItems.filter(i => i.type === 'LOST').length,
+          found: visibleItems.filter(i => i.type === 'FOUND').length,
+        })
     } catch (err) {
       console.error(err)
     } finally {
       setLoading(false)
     }
-  }, [typeFilter, category, searchQuery])
+  }, [typeFilter, category, searchQuery, user])
 
   useEffect(() => { fetchItems() }, [fetchItems])
 

@@ -4,18 +4,54 @@ import api from '../api/axios'
 const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
-  const [user, setUser]     = useState(() => {
-    try { return JSON.parse(localStorage.getItem('user')) } catch { return null }
-  })
+  const [user, setUser] = useState(null)
+
+useEffect(() => {
+  const storedUser = localStorage.getItem('user')
+
+  if (storedUser) {
+    try {
+      setUser(JSON.parse(storedUser))
+    } catch {
+      localStorage.removeItem('user')
+    }
+  }
+}, [])
   const [loading, setLoading] = useState(false)
 
   const login = async (email, password) => {
-    const { data } = await api.post('/auth/login', { email, password })
-    const { token, userId, name } = data.data
+
+    const response = await api.post('/auth/login', {
+      email,
+      password
+    })
+  
+    console.log(response.data)
+  
+    const backendData = response.data.data || response.data
+  
+    const token = backendData.token
+    const userId = backendData.userId
+    const name = backendData.name
+  
     localStorage.setItem('token', token)
-    localStorage.setItem('user', JSON.stringify({ id: userId, name, email }))
-    setUser({ id: userId, name, email })
-    return data
+  
+    localStorage.setItem(
+      'user',
+      JSON.stringify({
+        id: userId,
+        name,
+        email
+      })
+    )
+  
+    setUser({
+      id: userId,
+      name,
+      email
+    })
+  
+    return response.data
   }
 
   const register = async (name, email, password) => {

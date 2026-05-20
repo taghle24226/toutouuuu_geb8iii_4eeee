@@ -41,13 +41,24 @@ public class MatchingService {
         List<Map<String, Object>> scored = new ArrayList<>();
 
         for (Item candidate : candidates) {
-            // Ne pas comparer avec ses propres objets
-            if (candidate.getUser().getId().equals(newItem.getUser().getId())) continue;
-
-            int score = computeScore(newItem, candidate);
             List<String> matchedKw = getMatchedKeywords(newItem, candidate);
 
-            if (score >= 30) {
+// Au moins 2 mots-clés communs
+if (matchedKw.size() < 2) {
+    continue;
+}
+            // Ne pas comparer avec ses propres objets
+            if (candidate.getUser().getId().equals(newItem.getUser().getId())) continue;
+// Catégorie obligatoire
+if (newItem.getCategory() == null ||
+    candidate.getCategory() == null ||
+    !newItem.getCategory().equalsIgnoreCase(candidate.getCategory())) {
+    continue;
+}
+            int score = computeScore(newItem, candidate);
+           
+
+            if (score >= 50) {
                 Map<String, Object> entry = new HashMap<>();
                 entry.put("item", candidate);
                 entry.put("score", score);
@@ -65,17 +76,31 @@ public class MatchingService {
             Item candidate = (Item) entry.get("item");
             int score = (int) entry.get("score");
             List<String> kw = (List<String>) entry.get("keywords");
-
+            boolean alreadyExists = matchRepository
+            .findAll()
+            .stream()
+            .anyMatch(m ->
+                    m.getItem().getId().equals(newItem.getId())
+                            && m.getMatchedItemId().equals(candidate.getId())
+            );
+    
+    if (alreadyExists) {
+        continue;
+    }
             // Sauvegarder le match en base
             Match match = Match.builder()
                     .item(newItem)
                     .matchedItemId(candidate.getId())
-                    .lostUserId(newItem.getType() == Item.ItemType.LOST
-                            ? newItem.getUser().getId()
-                            : candidate.getUser().getId())
-                    .foundUserId(newItem.getType() == Item.ItemType.FOUND
-                            ? newItem.getUser().getId()
-                            : candidate.getUser().getId())
+                    .lostUserId(
+                        newItem.getType() == Item.ItemType.LOST
+                                ? newItem.getUser().getId()
+                                : candidate.getUser().getId()
+                )
+                .foundUserId(
+                        newItem.getType() == Item.ItemType.FOUND
+                                ? newItem.getUser().getId()
+                                : candidate.getUser().getId()
+                )
                     .similarityScore(score)
                     .matchedKeywords(String.join(",", kw))
                     .build();
@@ -150,15 +175,29 @@ public class MatchingService {
                 .collect(Collectors.toList());
     }
 
-    private List<String> parseKeywords(String json) {
+    private List<String> parseKeywords(String keywords) {
+
+        if (keywords == null || keywords.isEmpty()) {
+            return new ArrayList<>();
+        }
+    
         try {
-            if (json == null || json.isEmpty()) return new ArrayList<>();
-            return objectMapper.readValue(json, new TypeReference<List<String>>() {});
+            return objectMapper.readValue(
+                    keywords,
+                    new TypeReference<List<String>>() {}
+            ).stream()
+                    .map(String::trim)
+                    .map(String::toLowerCase)
+                    .filter(s -> !s.isEmpty())
+                    .collect(Collectors.toList());
+    
         } catch (Exception e) {
+    
+            log.warn("Erreur parsing keywords: {}", e.getMessage());
+    
             return new ArrayList<>();
         }
     }
-
     /**
      * Formule Haversine pour distance GPS en km
      */

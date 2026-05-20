@@ -58,11 +58,11 @@ export default function ItemDetail() {
 
   if (!item) return null
 
-  const isOwner = String(item.user?.id) === String(user?.id)
+  const isOwner = String(item.userId) === String(user?.id)
   const timeAgo = item.createdAt
     ? formatDistanceToNow(new Date(item.createdAt), { addSuffix: true, locale: fr })
     : ''
-
+    console.log(item)
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
       <button onClick={() => navigate(-1)} className="btn-ghost mb-4 -ml-2">
@@ -74,7 +74,11 @@ export default function ItemDetail() {
         {item.photoUrl && (
           <div className="relative h-64 bg-gray-800">
             <img
-              src={item.photoUrl.startsWith('http') ? item.photoUrl : `/uploads/${item.photoUrl}`}
+              src={
+                item.photoUrl.startsWith('http')
+                  ? item.photoUrl
+                  : `http://localhost:8080${item.photoUrl}`
+              }
               alt={item.title}
               className="w-full h-full object-cover"
             />
@@ -150,13 +154,13 @@ export default function ItemDetail() {
           <div className="border-t border-gray-800 pt-4 mb-5">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center text-white font-bold">
-                {item.user?.name?.[0]?.toUpperCase()}
+              {item.userName?.[0]?.toUpperCase()}
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-200">{item.user?.name}</p>
+                <p className="text-sm font-semibold text-gray-200">{item.userName}</p>
                 <p className="text-xs text-gray-500 flex items-center gap-1">
                   <Star className="w-3 h-3 text-yellow-400" />
-                  {item.user?.reputationScore ?? 0} points de réputation
+                 
                 </p>
               </div>
               <span className="ml-auto text-xs text-gray-600 flex items-center gap-1">
@@ -169,7 +173,10 @@ export default function ItemDetail() {
           <div className="flex gap-3">
             {!isOwner && item.status === 'ACTIVE' && (
               <button
-                onClick={() => navigate(`/chat/${item.user?.id}`)}
+              onClick={() => {
+                console.log(item)
+                navigate(`/chat/${item.userId}?itemId=${item.id}`)
+              }}
                 className="btn-primary flex-1"
               >
                 <MessageCircle className="w-4 h-4" /> Contacter

@@ -12,7 +12,7 @@ import java.util.List;
 public interface ItemRepository extends JpaRepository<Item, Long> {
 
     List<Item> findByStatusOrderByCreatedAtDesc(Item.ItemStatus status);
-
+    List<Item> findAllByOrderByCreatedAtDesc();
     List<Item> findByUserIdOrderByCreatedAtDesc(Long userId);
 
     List<Item> findByTypeAndStatusOrderByCreatedAtDesc(

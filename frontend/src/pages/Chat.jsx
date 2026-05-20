@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import api from '../api/axios'
 import { useAuth } from '../context/AuthContext'
 import { formatDistanceToNow } from 'date-fns'
@@ -8,6 +8,8 @@ import { Send, MessageCircle, ArrowLeft, Loader2, CheckCheck } from 'lucide-reac
 
 export default function Chat() {
   const { userId: targetUserId } = useParams()
+  const [searchParams] = useSearchParams()
+const itemId = searchParams.get('itemId')
   const { user } = useAuth()
   const navigate = useNavigate()
 
@@ -35,13 +37,19 @@ export default function Chat() {
 
   // If URL has a userId param, open that conversation
   useEffect(() => {
-    if (targetUserId && conversations.length > 0) {
-      const conv = conversations.find(c => String(c.otherUserId) === String(targetUserId))
-      if (conv) openConversation(conv)
-    } else if (targetUserId && conversations.length === 0) {
-      // Try to fetch user info and open a new conversation
+
+    if (!targetUserId) return
+  
+    const conv = conversations.find(
+      c => String(c.otherUserId) === String(targetUserId)
+    )
+  
+    if (conv) {
+      openConversation(conv)
+    } else {
       fetchUserAndOpen(targetUserId)
     }
+  
   }, [targetUserId, conversations])
 
   // WebSocket connection (dynamic import to avoid Vite/CJS issues)
@@ -55,16 +63,27 @@ export default function Chat() {
     ]).then(([{ Client }, { default: SockJS }]) => {
       client = new Client({
         webSocketFactory: () => new SockJS('http://localhost:8080/ws'),
-        connectHeaders: { Authorization: `Bearer ${token}` },
+      
+        connectHeaders: {
+          Authorization: `Bearer ${token}`
+        },
+      
         onConnect: () => {
+      
           client.subscribe('/user/queue/messages', (msg) => {
+      
             const message = JSON.parse(msg.body)
+      
             setMessages(prev => {
               if (prev.some(m => m.id === message.id)) return prev
               return [...prev, message]
             })
+      
+            // Refresh conversations + badges
+            loadConversations()
           })
         },
+      
         reconnectDelay: 5000,
       })
       client.activate()
@@ -84,11 +103,21 @@ export default function Chat() {
   }
 
   const fetchUserAndOpen = async (userId) => {
+
     try {
+  
       const { data } = await api.get(`/users/${userId}`)
-      setActiveChat({ userId: parseInt(userId), name: data.data?.name ?? 'Utilisateur' })
+  
+      setActiveChat({
+        userId: parseInt(userId),
+        name: data.data?.name ?? 'Utilisateur'
+      })
+  
       setMessages([])
-    } catch {}
+  
+    } catch (err) {
+      console.log(err)
+    }
   }
 
   const openConversation = async (conv) => {
@@ -100,6 +129,7 @@ export default function Chat() {
       // Mark as read
       const chatId = [Math.min(user.id, conv.otherUserId), Math.max(user.id, conv.otherUserId)].join('_')
       await api.patch(`/chat/${chatId}/read`).catch(() => {})
+      loadConversations()
     } catch {}
     finally { setLoading(false) }
   }
@@ -111,6 +141,7 @@ export default function Chat() {
     try {
       const { data } = await api.post('/chat/send', {
         receiverId: activeChat.userId,
+        itemId: Number(itemId),
         content: input.trim(),
       })
       setMessages(prev => [...prev, data.data])

@@ -14,6 +14,7 @@ export default function Navbar() {
 
   const [notifications, setNotifications]     = useState([])
   const [unreadCount, setUnreadCount]         = useState(0)
+  const [unreadMessages, setUnreadMessages] = useState(0)
   const [showNotifs, setShowNotifs]           = useState(false)
   const [showUserMenu, setShowUserMenu]       = useState(false)
   const [searchQuery, setSearchQuery]         = useState('')
@@ -37,12 +38,27 @@ export default function Navbar() {
   }, [])
 
   const fetchUnreadCount = async () => {
-    try {
-      const { data } = await api.get('/notifications/unread-count')
-      setUnreadCount(data.data ?? 0)
-    } catch {}
-  }
 
+    try {
+  
+      // Notifications
+      const notifRes = await api.get('/notifications/unread-count')
+      setUnreadCount(notifRes.data.data ?? 0)
+  
+      // Messages
+      const chatRes = await api.get('/chat')
+  
+      const unread = (chatRes.data.data ?? []).reduce(
+        (total, chat) => total + (chat.unreadCount ?? 0),
+        0
+      )
+  
+      setUnreadMessages(unread)
+  
+    } catch (err) {
+      console.log(err)
+    }
+  }
   const fetchNotifications = async () => {
     try {
       const { data } = await api.get('/notifications')
@@ -63,6 +79,9 @@ export default function Navbar() {
       setNotifications(notifications.map(n => ({ ...n, read: true })))
     } catch {}
   }
+
+
+  
 
   const markOneRead = async (id) => {
     try {
@@ -128,7 +147,15 @@ export default function Navbar() {
                   : 'text-gray-400 hover:text-gray-100 hover:bg-gray-800'
               }`}
             >
-              <Icon className="w-4 h-4" />
+            <div className="relative">
+  <Icon className="w-4 h-4" />
+
+  {label === 'Messages' && unreadMessages > 0 && (
+    <span className="absolute -top-2 -right-2 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+      {unreadMessages}
+    </span>
+  )}
+</div>
               <span>{label}</span>
             </Link>
           ))}
@@ -180,7 +207,16 @@ export default function Navbar() {
                     notifications.map(notif => (
                       <div
                         key={notif.id}
-                        onClick={() => markOneRead(notif.id)}
+                        onClick={async () => {
+
+                          await markOneRead(notif.id)
+                        
+                          if (notif.itemId) {
+                            navigate(`/items/${notif.itemId}`)
+                          }
+                        
+                          setShowNotifs(false)
+                        }}
                         className={`px-4 py-3 cursor-pointer hover:bg-gray-800/50 transition-all ${
                           !notif.read ? 'bg-primary-500/5 border-l-2 border-l-primary-500' : ''
                         }`}
@@ -223,9 +259,24 @@ export default function Navbar() {
                 <Link to="/profile" className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-all" onClick={() => setShowUserMenu(false)}>
                   <User className="w-4 h-4" /> Mon profil
                 </Link>
-                <Link to="/chat" className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-all" onClick={() => setShowUserMenu(false)}>
-                  <MessageCircle className="w-4 h-4" /> Messages
-                </Link>
+                <Link
+  to="/chat"
+  className="flex items-center justify-between px-4 py-2.5 text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-all"
+  onClick={() => setShowUserMenu(false)}
+>
+
+  <div className="flex items-center gap-2">
+    <MessageCircle className="w-4 h-4" />
+    Messages
+  </div>
+
+  {unreadMessages > 0 && (
+    <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+      {unreadMessages > 9 ? '9+' : unreadMessages}
+    </span>
+  )}
+
+</Link>
                 <div className="border-t border-gray-800 mt-1 pt-1">
                   <button
                     onClick={() => { logout(); navigate('/login') }}
@@ -252,7 +303,15 @@ export default function Navbar() {
                 : 'text-gray-500 hover:text-gray-300'
             }`}
           >
-            <Icon className="w-5 h-5" />
+            <div className="relative">
+  <Icon className="w-5 h-5" />
+
+  {label === 'Messages' && unreadMessages > 0 && (
+    <span className="absolute -top-2 -right-2 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+      {unreadMessages}
+    </span>
+  )}
+</div>
             <span>{label}</span>
           </Link>
         ))}

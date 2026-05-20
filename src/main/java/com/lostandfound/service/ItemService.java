@@ -76,7 +76,9 @@ public class ItemService {
         item = itemRepository.save(item);
 
         // Incrémenter compteur
-        user.setItemsPublished(user.getItemsPublished() + 1);
+        user.setItemsPublished(
+            (user.getItemsPublished() == null ? 0 : user.getItemsPublished()) + 1
+        );
         userRepository.save(user);
 
         // Lancer le matching
@@ -86,9 +88,11 @@ public class ItemService {
         if (!matches.isEmpty()) {
             MatchResponse bestMatch = matches.get(0);
             notificationService.sendMatchNotification(
-                    userId, item.getTitle(), bestMatch.getSimilarityScore(),
-                    bestMatch.getId()
-            );
+                userId,
+                item.getTitle(),
+                bestMatch.getSimilarityScore(),
+                bestMatch.getMatchedItem().getId()
+        );
         }
 
         Map<String, Object> result = new HashMap<>();
@@ -150,8 +154,12 @@ public class ItemService {
 
         // Mettre à jour la réputation
         User user = item.getUser();
-        user.setItemsResolved(user.getItemsResolved() + 1);
-        user.setReputationScore(user.getReputationScore() + 1.0);
+        user.setItemsResolved(
+            (user.getItemsResolved() == null ? 0 : user.getItemsResolved()) + 1
+        );
+        user.setReputationScore(
+            (user.getReputationScore() == null ? 0.0 : user.getReputationScore()) + 1.0
+        );
         userRepository.save(user);
 
         notificationService.sendResolvedNotification(userId, item.getTitle());

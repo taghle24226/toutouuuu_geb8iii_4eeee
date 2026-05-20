@@ -17,10 +17,17 @@ export default function Login() {
     setLoading(true)
     try {
       await login(form.email, form.password)
+      console.log('LOGIN OK')
       toast.success('Bienvenue !')
-      navigate('/')
+     window.location.href = '/profile'
     } catch (err) {
-      toast.error(err.response?.data?.message ?? 'Email ou mot de passe incorrect')
+      console.log(err)
+
+toast.error(
+  err.response?.data?.message ??
+  err.message ??
+  'Erreur connexion'
+)
     } finally {
       setLoading(false)
     }
@@ -45,7 +52,13 @@ export default function Login() {
         </div>
 
         <div className="card p-8 glow">
-          <form onSubmit={handleSubmit} className="space-y-5">
+        <form
+  onSubmit={(e) => {
+    e.preventDefault()
+    handleSubmit(e)
+  }}
+  className="space-y-5"
+>
             {/* Email */}
             <div>
               <label className="label">Adresse email</label>
@@ -85,7 +98,8 @@ export default function Login() {
               </div>
             </div>
 
-            <button type="submit" disabled={loading} className="btn-primary w-full py-3 text-base mt-2">
+            <button type="button"
+  onClick={handleSubmit} disabled={loading} className="btn-primary w-full py-3 text-base mt-2">
               {loading ? (
                 <span className="flex items-center gap-2">
                   <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">

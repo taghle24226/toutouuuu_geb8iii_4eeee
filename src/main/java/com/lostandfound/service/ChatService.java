@@ -112,6 +112,15 @@ public class ChatService {
             chat.put("lastMessage", msg.getContent());
             chat.put("lastMessageAt", msg.getCreatedAt());
             chat.put("itemId", msg.getItemId());
+            Long unreadCount = allMessages.stream()
+        .filter(m ->
+                m.getChatId().equals(msg.getChatId()) &&
+                m.getReceiverId().equals(userId) &&
+                !m.getIsRead()
+        )
+        .count();
+
+chat.put("unreadCount", unreadCount);
             return chat;
         }).collect(Collectors.toList());
     }
